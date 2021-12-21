@@ -1,5 +1,12 @@
 [
  {
+   "votes_dem": 567243,
+   "votes_gop": 386807,
+   "total_votes": 1011651,
+   "per_dem": 0.560710166,
+   "per_gop": 0.382352214,
+   "diff": 180436,
+   "per_point_diff": 0.1784,
    "state_abbr": "CA",
    "county_name": "San Diego County",
    "combined_fips": "US-CA-06073"
