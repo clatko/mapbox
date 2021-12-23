@@ -1824,6 +1824,12 @@
     "risk": 13
   }, 
   {
+    "id": "US-CA-06073", 
+    "type": "county", 
+    "name": "San Diego", 
+    "risk": null
+  }, 
+  {
     "id": "US-CA-06059", 
     "type": "county", 
     "name": "Orange", 
