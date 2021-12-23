@@ -1,9 +1,11 @@
 mapboxgl.accessToken = '${MAPBOX_KEY}';
+mapboxgl.clearStorage();
+
 const map = new mapboxgl.Map({
   container: 'map', // container id
   style: 'mapbox://styles/mapbox/light-v9', // stylesheet location
   center: [-97, 39],
-  interactive: false,
+  interactive: true,
   zoom: 3
 });
 
@@ -25,20 +27,17 @@ const getJSON = (url, callback) => {
 };
 
 map.on('load', () => {
-  getJSON('https://raw.githubusercontent.com/clatko/mapbox/master/usPresResults.json', (err, data) => {
+  getJSON('https://raw.githubusercontent.com/clatko/mapbox/master/risk.json', (err, data) => {
     if (err !== null) {
       console.log('error fetching file')
     } else {
       data.forEach((row) => {
-        if (!row['combined_fips']) {
+        if (!row['id']) {
           return;
         }
-        // get winner
-        const winner = row['votes_dem'] > row['votes_gop'] ? 'dem' : 'gop';
-        const id = row['combined_fips'];
+        const id = parseInt(row['id'].split('-').pop());
         newdata[id] = {
-          winner: winner,
-          diff: row['per_point_diff'] * 100
+          risk: row['risk']
         }
       })
 
@@ -46,40 +45,95 @@ map.on('load', () => {
     initLayers();
   })
 
+  const popup = new mapboxgl.Popup({
+    closeButton: false
+  });
+
+  function getColor(d) {
+    if (typeof(d) == "undefined" || d == null) {
+      return 'transparent';
+    }
+    return d > 90 ? '#800026' :
+           d > 70  ? '#E31A1C' :
+           d > 50  ? '#FD8D3C' :
+           d > 10  ? '#FC4E2A' :
+                      '#FFEDA0';
+  }
+
   const initLayers = () => {
-
-    const blueScale = d3.scaleLinear()
-      .domain([0, 100])
-      .range(['#bad2f0', '#1868d1']);
-
-    const redScale = d3.scaleLinear()
-      .domain([0, 100])
-      .range(['#f2cbcb', '#be2d1e']);
-
-
     map.addSource('counties', {
       'type': 'vector',
-      'url': 'mapbox://thepublichealthco.2yy4ft1e'
+      'url': 'mapbox://thepublichealthco.uscounties'
     });
     
     map.addLayer({
-      'id': 'counties-join',
+      'id': 'uscounties',
       'type': 'fill',
       'source': 'counties',
-      'source-layer': 'uscounties',
+      'source-layer': 'us_counties',
       'paint': {
-        'fill-color': ['feature-state', 'color']
+        'fill-color': ['feature-state', 'color'],
+				'fill-opacity': [
+			    'case',
+			    ['boolean', ['feature-state', 'hover'], false],
+			    1,
+			    0.5]
       }
     }, 'waterway-label');
+
+   map.addLayer({
+        'id': 'counties-line',
+        'type': 'line',
+        'source': 'counties',
+        'source-layer': 'us_counties',
+        'paint': {
+            'line-color': '#b8b8b8',
+            'line-opacity': .6
+        }
+    }, 'waterway-label');
+    
+    let hoveredStateId = null;
+    map.on('mousemove', 'uscounties', function (e) {
+      if (e.features.length > 0) {
+        if (hoveredStateId) {
+          map.setFeatureState({
+            source: 'counties',
+            sourceLayer: 'us_counties',
+            id: hoveredStateId
+          }, {
+            hover: false
+          });
+        }
+
+        hoveredStateId = e.features[0].id;
+
+        map.setFeatureState({
+          source: 'counties',
+          sourceLayer: 'us_counties',
+          id: hoveredStateId
+        }, {
+          hover: true
+        });
+      }
+    });
+
+    map.on('click', 'uscounties', function (e) {
+      if (e.features.length > 0) {
+        popup
+        .setLngLat(e.lngLat)
+        .setText(e.features[0].properties.NAMELSAD + " (Risk: " + newdata[e.features[0].id].risk + ")")
+        .addTo(map);
+      }
+    });
     
     const setCountiesColor = () => {
       for (let key in newdata) {
         map.setFeatureState({
           source: 'counties',
-          sourceLayer: 'uscounties',
+          sourceLayer: 'us_counties',
           id: key
         }, {
-          'color': newdata[key]['winner'] === 'dem' ? blueScale(newdata[key]['diff']) : redScale(newdata[key]['diff'])
+          'color': getColor(newdata[key]['risk'])
         })
       }
     }
