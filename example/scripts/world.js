@@ -1,4 +1,4 @@
-mapboxgl.accessToken = 'KEY';
+mapboxgl.accessToken = '';
 mapboxgl.clearStorage();
 
 const zoomThreshold = 4;
@@ -37,7 +37,7 @@ map.on('load', () => {
         if (!row['id']) {
           return;
         }
-        const id = parseInt(row['id'].split('-').pop());
+        const id = parseInt(row['id']);
         newdata[id] = {
           risk: row['risk']
         }
@@ -150,6 +150,30 @@ map.on('load', () => {
       }
     }, 'waterway-label');
     
+    let hoveredCountryId = null;
+    map.on('mousemove', 'world', function (e) {
+      if (e.features.length > 0) {
+        if (hoveredCountryId) {
+          map.setFeatureState({
+            source: 'world',
+            sourceLayer: 'world',
+            id: hoveredCountryId
+          }, {
+            hover: false
+          });
+        }
+
+        hoveredCountryId = e.features[0].id;
+
+        map.setFeatureState({
+          source: 'world',
+          sourceLayer: 'world',
+          id: hoveredCountryId
+        }, {
+          hover: true
+        });
+      }
+    });
     let hoveredStateId = null;
     map.on('mousemove', 'usstates', function (e) {
       if (e.features.length > 0) {
@@ -174,16 +198,59 @@ map.on('load', () => {
         });
       }
     });
+    let hoveredCountyId = null;
+    map.on('mousemove', 'uscounties', function (e) {
+      if (e.features.length > 0) {
+        if (hoveredCountyId) {
+          map.setFeatureState({
+            source: 'world',
+            sourceLayer: 'us_counties',
+            id: hoveredCountyId
+          }, {
+            hover: false
+          });
+        }
+
+        hoveredCountyId = e.features[0].id;
+
+        map.setFeatureState({
+          source: 'world',
+          sourceLayer: 'us_counties',
+          id: hoveredCountyId
+        }, {
+          hover: true
+        });
+      }
+    });
+
+    map.on('click', 'world', function (e) {
+      if (e.features.length > 0) {
+        popup
+        .setLngLat(e.lngLat)
+        .setText(e.features[0].properties['name'])
+        .addTo(map);
+      }
+    });
 
     map.on('click', 'usstates', function (e) {
       if (e.features.length > 0) {
         popup
         .setLngLat(e.lngLat)
-        .setText(JSON.stringify(e.features[0].properties) + " " + e.features[0].properties.NAMELSAD + " (Risk: " + newdata[e.features[0].id].risk + ")")
+        .setText(e.features[0].properties['NAME'])
         .addTo(map);
       }
     });
-    
+
+    map.on('click', 'uscounties', function (e) {
+      if (e.features.length > 0) {
+        popup
+        .setLngLat(e.lngLat)
+//         .setText(JSON.stringify(e.features[0].properties) + " " + e.features[0].properties.NAMELSAD + " (Risk: " + newdata[e.features[0].id].risk + ")")
+        .setText(e.features[0].properties['NAMELSAD'] + " (Risk: " + newdata[e.features[0].id].risk + ")")
+        .addTo(map);
+      }
+    });
+
     const setStatesColor = () => {
       for (let key in newdata) {
         map.setFeatureState({
