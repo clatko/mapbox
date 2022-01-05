@@ -37,6 +37,7 @@ map.on('load', () => {
         if (!row['id']) {
           return;
         }
+        // filter this into 3 maps based on int length
         const id = parseInt(row['id']);
         newdata[id] = {
           risk: row['risk']
@@ -236,7 +237,7 @@ map.on('load', () => {
       if (e.features.length > 0) {
         popup
         .setLngLat(e.lngLat)
-        .setText(e.features[0].properties['NAME'])
+        .setText(e.features[0].properties['NAME'] + " (Risk: " + newdata[e.features[0].id].risk + ")")
         .addTo(map);
       }
     });
@@ -251,6 +252,17 @@ map.on('load', () => {
       }
     });
 
+    const setCountryColor = () => {
+      for (let key in newdata) {
+        map.setFeatureState({
+          source: 'world',
+          sourceLayer: 'world',
+          id: key
+        }, {
+          'color': getColor(newdata[key]['risk'])
+        })
+      }
+    }
     const setStatesColor = () => {
       for (let key in newdata) {
         map.setFeatureState({
@@ -276,12 +288,16 @@ map.on('load', () => {
     
     const setAfterLoad = (e) => {
       if (e.sourceId === 'world' && e.isSourceLoaded) {
+        setCountryColor();
+        setStatesColor();
         setCountiesColor();
         map.off('sourcedata', setAfterLoad)
       }
     }
     
     if (map.isSourceLoaded('world')) {
+      setCountryColor();
+      setStatesColor();
       setCountiesColor();
     } else {
       map.on('sourcedata', setAfterLoad);
