@@ -1,4 +1,4 @@
-mapboxgl.accessToken = 'xxx';
+mapboxgl.accessToken = 'KEY';
 mapboxgl.clearStorage();
 
 const zoomThreshold = 4;
@@ -69,10 +69,10 @@ map.on('load', () => {
     });
     
     map.addLayer({
-      'id': 'us',
+      'id': 'world',
       'type': 'fill',
       'source': 'world',
-      'source-layer': 'us',
+      'source-layer': 'world',
       'minzoom': 0,
       'maxzoom': 4,
       'paint': {
@@ -119,7 +119,7 @@ map.on('load', () => {
       'id': 'us-line',
       'type': 'line',
       'source': 'world',
-      'source-layer': 'us',
+      'source-layer': 'world',
       'minzoom': 0,
       'maxzoom': 4,
       'paint': {
