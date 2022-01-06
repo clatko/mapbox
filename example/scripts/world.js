@@ -101,6 +101,20 @@ map.on('load', () => {
       }
     }, 'waterway-label');
     map.addLayer({
+      'id': 'mystates',
+      'type': 'fill',
+      'source': 'world',
+      'source-layer': 'my_states',
+      'paint': {
+        'fill-color': ['feature-state', 'color'],
+				'fill-opacity': [
+			    'case',
+			    ['boolean', ['feature-state', 'hover'], false],
+			    1,
+			    0.5]
+      }
+    }, 'waterway-label');
+    map.addLayer({
       'id': 'uscounties',
       'type': 'fill',
       'source': 'world',
@@ -117,7 +131,7 @@ map.on('load', () => {
     }, 'waterway-label');
 
    map.addLayer({
-      'id': 'us-line',
+      'id': 'world-line',
       'type': 'line',
       'source': 'world',
       'source-layer': 'world',
@@ -129,7 +143,18 @@ map.on('load', () => {
       }
     }, 'waterway-label');
    map.addLayer({
-      'id': 'states-line',
+      'id': 'us-states-line',
+      'type': 'line',
+      'source': 'world',
+      'source-layer': 'my_states',
+      'maxzoom': zoomThreshold,
+      'paint': {
+          'line-color': '#b8b8b8',
+          'line-opacity': .6
+      }
+    }, 'waterway-label');
+   map.addLayer({
+      'id': 'us-states-line',
       'type': 'line',
       'source': 'world',
       'source-layer': 'us_states',
@@ -140,7 +165,7 @@ map.on('load', () => {
       }
     }, 'waterway-label');
    map.addLayer({
-      'id': 'counties-line',
+      'id': 'us-counties-line',
       'type': 'line',
       'source': 'world',
       'source-layer': 'us_counties',
@@ -170,6 +195,30 @@ map.on('load', () => {
           source: 'world',
           sourceLayer: 'world',
           id: hoveredCountryId
+        }, {
+          hover: true
+        });
+      }
+    });
+    let hoveredMyStateId = null;
+    map.on('mousemove', 'mystates', function (e) {
+      if (e.features.length > 0) {
+        if (hoveredMyStateId) {
+          map.setFeatureState({
+            source: 'world',
+            sourceLayer: 'my_states',
+            id: hoveredMyStateId
+          }, {
+            hover: false
+          });
+        }
+
+        hoveredMyStateId = e.features[0].id;
+
+        map.setFeatureState({
+          source: 'world',
+          sourceLayer: 'my_states',
+          id: hoveredMyStateId
         }, {
           hover: true
         });
@@ -233,6 +282,15 @@ map.on('load', () => {
       }
     });
 
+    map.on('click', 'mystates', function (e) {
+      if (e.features.length > 0) {
+        popup
+        .setLngLat(e.lngLat)
+        .setText(e.features[0].properties['name_en'] + " (Risk: " + newdata[e.features[0].id].risk + ")")
+        .addTo(map);
+      }
+    });
+
     map.on('click', 'usstates', function (e) {
       if (e.features.length > 0) {
         popup
@@ -257,6 +315,17 @@ map.on('load', () => {
         map.setFeatureState({
           source: 'world',
           sourceLayer: 'world',
+          id: key
+        }, {
+          'color': getColor(newdata[key]['risk'])
+        })
+      }
+    }
+    const setMyStatesColor = () => {
+      for (let key in newdata) {
+        map.setFeatureState({
+          source: 'world',
+          sourceLayer: 'my_states',
           id: key
         }, {
           'color': getColor(newdata[key]['risk'])
@@ -289,6 +358,7 @@ map.on('load', () => {
     const setAfterLoad = (e) => {
       if (e.sourceId === 'world' && e.isSourceLoaded) {
         setCountryColor();
+        setMyStatesColor();
         setStatesColor();
         setCountiesColor();
         map.off('sourcedata', setAfterLoad)
@@ -297,6 +367,7 @@ map.on('load', () => {
     
     if (map.isSourceLoaded('world')) {
       setCountryColor();
+      setMyStatesColor();
       setStatesColor();
       setCountiesColor();
     } else {
